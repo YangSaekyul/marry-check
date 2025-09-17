@@ -1,7 +1,7 @@
-const KAKAO_JS_KEY = '' // TODO: 여기에 수호님이 전달한 JavaScript 키를 넣으세요. 환경변수 사용 권장.
 
 export default function Login() {
   const onKakaoLogin = () => {
+    const KAKAO_JS_KEY = process.env.NEXT_PUBLIC_KAKAO_JS_KEY || ''
     const redirectUri = `${window.location.origin}/auth/kakao/callback`
     const kakaoAuthUrl = `https://kauth.kakao.com/oauth/authorize?client_id=${encodeURIComponent(KAKAO_JS_KEY)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code`
     window.location.href = kakaoAuthUrl
