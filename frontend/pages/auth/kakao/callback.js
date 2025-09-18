@@ -15,8 +15,8 @@ export default function KakaoCallback() {
 
     const doExchange = async () => {
       try {
-        // 백엔드 함수 URL은 환경변수로 설정하세요. 배포 환경에서는 전체 URL을 사용합니다.
-        const fnUrl = process.env.NEXT_PUBLIC_KAKAO_LOGIN_FN_URL || '/api/kakaoLogin'
+  // 백엔드 함수 URL: 우선 환경변수 사용, 없으면 배포된 함수 URL을 기본값으로 사용
+  const fnUrl = process.env.NEXT_PUBLIC_KAKAO_LOGIN_FN_URL || 'https://us-central1-marry-check.cloudfunctions.net/kakaoLogin'
 
         const resp = await fetch(fnUrl, {
           method: 'POST',
