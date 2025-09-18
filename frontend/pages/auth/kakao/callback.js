@@ -40,6 +40,10 @@ export default function KakaoCallback() {
         signInWithCustomToken(auth, data.token)
           .then((userCredential) => {
             console.log('Sign-in successful:', userCredential)
+            // 1. '로그인 상태'라는 깃발 꽂기
+            localStorage.setItem('isAuthenticated', 'true');
+            // 2. 메인 페이지('/')로 길 알려주기
+            window.location.href = '/';
             setStatus('success')
             setMessage('로그인 성공, 메인으로 이동합니다...')
             router.replace('/')
