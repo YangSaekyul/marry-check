@@ -2,7 +2,12 @@ const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const cors = require('cors')({ origin: 'https://marry-check.vercel.app' });
 
-admin.initializeApp();
+// Firebase Admin SDK 초기화 - 명시적으로 프로젝트 ID 포함
+if (!admin.apps.length) {
+  admin.initializeApp({
+    projectId: 'marry-check'
+  });
+}
 
 // 예시 헬퍼 함수
 exports.helloWorld = functions.https.onRequest((request, response) => {
@@ -107,21 +112,48 @@ exports.kakaoLogin = functions.https.onRequest((req, res) => {
       }
 
       const uid = 'kakao:' + kakaoId;
+      console.log('kakaoLogin: Processing user with uid:', uid, 'kakaoId:', kakaoId);
 
       // Firebase Auth 사용자 확인/생성
       let firebaseUser;
       try {
+        console.log('kakaoLogin: Attempting getUser for uid:', uid);
         firebaseUser = await admin.auth().getUser(uid);
+        console.log('kakaoLogin: Found existing user:', firebaseUser.uid);
       } catch (err) {
+        console.log('kakaoLogin: getUser failed with error:', err.code, err.message);
         if (err && err.code === 'auth/user-not-found') {
           const displayName = (userJson.kakao_account && userJson.kakao_account.profile && userJson.kakao_account.profile.nickname) || undefined;
-          firebaseUser = await admin.auth().createUser({ uid: uid, displayName: displayName });
+          console.log('kakaoLogin: Creating new user with uid:', uid, 'displayName:', displayName);
+          try {
+            firebaseUser = await admin.auth().createUser({ uid: uid, displayName: displayName });
+            console.log('kakaoLogin: Successfully created user:', firebaseUser.uid);
+          } catch (createErr) {
+            console.error('kakaoLogin: createUser failed:', createErr.code, createErr.message, createErr);
+            throw createErr;
+          }
         } else {
+          console.error('kakaoLogin: getUser failed with unexpected error:', err.code, err.message, err);
           throw err;
         }
       }
 
-      const customToken = await admin.auth().createCustomToken(uid);
+      console.log('kakaoLogin: Attempting createCustomToken for uid:', uid);
+      let customToken;
+      try {
+        customToken = await admin.auth().createCustomToken(uid);
+        console.log('kakaoLogin: Successfully created custom token');
+      } catch (tokenErr) {
+        console.error('kakaoLogin: createCustomToken failed:', tokenErr.code, tokenErr.message, tokenErr);
+        if (tokenErr.code === 'auth/configuration-not-found') {
+          return res.status(500).send({ 
+            success: false, 
+            message: 'Firebase Authentication is not properly configured. Please enable Authentication in Firebase Console.',
+            errorCode: 'auth/configuration-not-found'
+          });
+        }
+        throw tokenErr;
+      }
 
       return res.status(200).send({ success: true, token: customToken });
     } catch (error) {
