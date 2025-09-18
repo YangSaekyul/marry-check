@@ -1,7 +1,8 @@
 
 import { useState } from 'react'
-import { auth } from '../lib/firebaseClient'
+import { auth, db } from '../lib/firebaseClient'
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth'
+import { doc, updateDoc, arrayUnion } from 'firebase/firestore'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -21,11 +22,33 @@ export default function Login() {
     setMessage('')
     try {
       if (mode === 'signup') {
-        await createUserWithEmailAndPassword(auth, email, password)
+        const cred = await createUserWithEmailAndPassword(auth, email, password)
         setMessage('회원가입 성공!')
+        // 초대 파라미터가 있으면 커플에 가입 처리
+        try {
+          const params = new URLSearchParams(window.location.search)
+          const invite = params.get('invite')
+          if (invite) {
+            await updateDoc(doc(db, 'couples', invite), { members: arrayUnion(cred.user.uid) })
+            setMessage((m) => m + ' 초대 수락 완료')
+          }
+        } catch (joinErr) {
+          console.error('초대 수락 실패', joinErr)
+        }
       } else {
-        await signInWithEmailAndPassword(auth, email, password)
+        const cred = await signInWithEmailAndPassword(auth, email, password)
         setMessage('로그인 성공!')
+        // 로그인 후 invite 파라미터가 있으면 가입 처리
+        try {
+          const params = new URLSearchParams(window.location.search)
+          const invite = params.get('invite')
+          if (invite) {
+            await updateDoc(doc(db, 'couples', invite), { members: arrayUnion(cred.user.uid) })
+            setMessage((m) => m + ' 초대 수락 완료')
+          }
+        } catch (joinErr) {
+          console.error('초대 수락 실패', joinErr)
+        }
       }
     } catch (err) {
       console.error(err)

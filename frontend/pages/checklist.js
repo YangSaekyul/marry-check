@@ -21,21 +21,37 @@ export default function ChecklistPage() {
   const [newTitle, setNewTitle] = useState('')
   const [loading, setLoading] = useState(true)
 
-  // 로그인 사용자/커플 키 추출: 현재는 UID 기반으로 참조
+  // 로그인 사용자/커플 키 추출: 사용자 문서에서 coupleId 사용
   const uid = typeof window !== 'undefined' ? auth.currentUser?.uid : undefined
+  const [coupleId, setCoupleId] = useState(null)
+
+  useEffect(() => {
+    const load = async () => {
+      if (!uid) return
+      try {
+        const uref = doc(db, 'users', uid)
+        const snap = await (await import('firebase/firestore')).getDoc(uref)
+        const data = snap.data()
+        if (data && data.coupleId) setCoupleId(data.coupleId)
+      } catch (e) {
+        console.error('Failed to load user profile', e)
+      }
+    }
+    load()
+  }, [uid])
 
   // Firestore 경로: projects/{projectId}/databases/(default)/documents/checklists
   const listQuery = useMemo(() => {
-    if (!uid) return null
-    // 예시 모델: checklists 컬렉션, 필드: ownerUid, title, status('pending'|'done'), category('essential'|'optional'|'byTime')
+    if (!coupleId) return null
+    // 모델: checklists 컬렉션, 필드: coupleId, title, status, category
     const col = collection(db, 'checklists')
     return query(
       col,
-      where('ownerUid', '==', uid),
+      where('coupleId', '==', coupleId),
       where('category', '==', activeTab),
       orderBy('createdAt', 'asc')
     )
-  }, [db, uid, activeTab])
+  }, [db, coupleId, activeTab])
 
   useEffect(() => {
     if (!listQuery) return
@@ -50,11 +66,11 @@ export default function ChecklistPage() {
   }, [listQuery])
 
   const onAdd = async () => {
-    if (!uid) return
+    if (!uid || !coupleId) return
     const title = newTitle.trim()
     if (!title) return
     await addDoc(collection(db, 'checklists'), {
-      ownerUid: uid,
+      coupleId,
       title,
       status: 'pending',
       category: activeTab,
