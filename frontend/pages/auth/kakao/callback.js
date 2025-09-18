@@ -1,6 +1,6 @@
 import {useRouter} from 'next/router'
 import {useEffect, useState} from 'react'
-import { auth } from '../../lib/firebaseClient'
+import { auth } from '../../../lib/firebaseClient'
 import { signInWithCustomToken } from 'firebase/auth'
 
 export default function KakaoCallback() {
