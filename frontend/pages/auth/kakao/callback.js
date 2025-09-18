@@ -15,8 +15,8 @@ export default function KakaoCallback() {
 
     const doExchange = async () => {
       try {
-  // 백엔드 함수 URL: 우선 환경변수 사용, 없으면 배포된 함수 URL을 기본값으로 사용
-  const fnUrl = process.env.NEXT_PUBLIC_KAKAO_LOGIN_FN_URL || 'https://us-central1-marry-check.cloudfunctions.net/kakaoLogin'
+        // 백엔드 함수 URL: 우선 환경변수 사용, 없으면 배포된 함수 URL을 기본값으로 사용
+        const fnUrl = process.env.NEXT_PUBLIC_KAKAO_LOGIN_FN_URL || 'https://us-central1-marry-check.cloudfunctions.net/kakaoLogin'
 
         const resp = await fetch(fnUrl, {
           method: 'POST',
@@ -25,16 +25,31 @@ export default function KakaoCallback() {
         })
 
         const data = await resp.json()
+        // 백엔드 응답 전체 로깅
+        console.log('Backend Response:', data)
+
         if (!resp.ok || !data.success || !data.token) {
+          console.error('Backend indicated failure or missing token:', resp.status, data)
           throw new Error(data.message || '토큰 교환 실패')
         }
 
-        // Firebase 클라이언트로 커스텀 토큰으로 로그인
-        await signInWithCustomToken(auth, data.token)
+        // 로그인 시도 기록
+        console.log('Attempting to sign in...')
 
-        setStatus('success')
-        setMessage('로그인 성공, 메인으로 이동합니다...')
-        router.replace('/')
+        // Firebase 클라이언트로 커스텀 토큰으로 로그인
+        signInWithCustomToken(auth, data.token)
+          .then((userCredential) => {
+            console.log('Sign-in successful:', userCredential)
+            setStatus('success')
+            setMessage('로그인 성공, 메인으로 이동합니다...')
+            router.replace('/')
+          })
+          .catch((signErr) => {
+            console.error('Sign-in failed:', signErr)
+            setStatus('error')
+            setMessage('로그인에 실패했습니다. 다시 시도해주세요.')
+            setTimeout(() => router.replace('/login'), 2500)
+          })
       } catch (err) {
         console.error('카카오 로그인 완료 처리 실패:', err)
         setStatus('error')
