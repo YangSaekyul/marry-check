@@ -128,6 +128,17 @@ exports.kakaoLogin = functions.https.onRequest((req, res) => {
           try {
             firebaseUser = await admin.auth().createUser({ uid: uid, displayName: displayName });
             console.log('kakaoLogin: Successfully created user:', firebaseUser.uid);
+            // Create a corresponding Firestore user document (merge to avoid overwriting)
+            try {
+              await admin.firestore().collection('users').doc(uid).set({
+                coupleId: null,
+                displayName: displayName || null,
+                createdAt: admin.firestore.FieldValue.serverTimestamp()
+              }, { merge: true })
+              console.log('kakaoLogin: Created user document for uid:', uid);
+            } catch (fireErr) {
+              console.error('kakaoLogin: Failed to create user document:', fireErr);
+            }
           } catch (createErr) {
             console.error('kakaoLogin: createUser failed:', createErr.code, createErr.message, createErr);
             throw createErr;
@@ -153,6 +164,18 @@ exports.kakaoLogin = functions.https.onRequest((req, res) => {
           });
         }
         throw tokenErr;
+      }
+
+      // Ensure there is a Firestore user document for existing users as well
+      try {
+        await admin.firestore().collection('users').doc(uid).set({
+          coupleId: null,
+          displayName: firebaseUser.displayName || null,
+          lastLoginAt: admin.firestore.FieldValue.serverTimestamp()
+        }, { merge: true })
+        console.log('kakaoLogin: Ensured user document exists for uid:', uid)
+      } catch (fireErr) {
+        console.error('kakaoLogin: Failed to ensure user document:', fireErr)
       }
 
       return res.status(200).send({ success: true, token: customToken });

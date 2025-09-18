@@ -1,0 +1,25 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 사용자는 자신의 user 정보만 읽고 쓸 수 있다.
+    match /users/{userId} {
+      allow read, write: if request.auth.uid == userId;
+    }
+
+    // couples 문서는 멤버만 읽고 수정할 수 있다.
+    match /couples/{coupleId} {
+      allow read, update: if request.auth.uid in resource.data.members;
+      allow create: if request.auth.uid == request.resource.data.members[0];
+    }
+
+    // checklists 문서는 해당 couple의 멤버만 모든 작업을 할 수 있다.
+    match /checklists/{checklistId} {
+      function isCoupleMember() {
+        let coupleId = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.coupleId;
+        return request.auth.uid in get(/databases/$(database)/documents/couples/$(coupleId)).data.members;
+      }
+      allow read, write, create, delete: if isCoupleMember();
+    }
+  }
+}
