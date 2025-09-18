@@ -80,6 +80,33 @@ export default function Login() {
           카카오로 시작하기
         </button>
 
+        {process.env.NODE_ENV === 'development' && (
+          <button
+            type="button"
+            onClick={() => {
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('isAuthenticated', 'true')
+                window.location.href = '/'
+              }
+            }}
+            style={{
+              display: 'block',
+              width: '100%',
+              padding: '10px 16px',
+              background: '#10b981',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 6,
+              fontWeight: 700,
+              fontSize: 14,
+              cursor: 'pointer',
+              marginTop: 8
+            }}
+          >
+            개발용 빠른 로그인
+          </button>
+        )}
+
         <div style={{borderTop: '1px solid #eee', paddingTop: 16, marginTop: 8}}>
           <div style={{display: 'grid', gap: 8}}>
             <input placeholder="이메일" value={email} onChange={(e) => setEmail(e.target.value)} style={{padding: 10, borderRadius: 6, border: '1px solid #ddd'}} />
