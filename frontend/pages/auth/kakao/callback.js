@@ -25,37 +25,29 @@ export default function KakaoCallback() {
         })
 
         const data = await resp.json()
-        // 백엔드 응답 전체 로깅
-        console.log('Backend Response:', data)
 
         if (!resp.ok || !data.success || !data.token) {
-          console.error('Backend indicated failure or missing token:', resp.status, data)
-          throw new Error(data.message || '토큰 교환 실패')
+          setStatus('error')
+          setMessage('로그인에 실패했습니다. 다시 시도해주세요.')
+          setTimeout(() => router.replace('/login'), 2500)
+          return
         }
-
-        // 로그인 시도 기록
-        console.log('Attempting to sign in...')
 
         // Firebase 클라이언트로 커스텀 토큰으로 로그인
         signInWithCustomToken(auth, data.token)
           .then((userCredential) => {
-            console.log('Sign-in successful:', userCredential)
-            // 1. '로그인 상태'라는 깃발 꽂기
-            localStorage.setItem('isAuthenticated', 'true');
-            // 2. 메인 페이지('/')로 길 알려주기
-            window.location.href = '/';
+            // 로그인 성공 후 로컬 상태 저장 및 메인으로 이동
+            localStorage.setItem('isAuthenticated', 'true')
             setStatus('success')
             setMessage('로그인 성공, 메인으로 이동합니다...')
             router.replace('/')
           })
-          .catch((signErr) => {
-            console.error('Sign-in failed:', signErr)
+          .catch(() => {
             setStatus('error')
             setMessage('로그인에 실패했습니다. 다시 시도해주세요.')
             setTimeout(() => router.replace('/login'), 2500)
           })
       } catch (err) {
-        console.error('카카오 로그인 완료 처리 실패:', err)
         setStatus('error')
         setMessage('로그인에 실패했습니다. 다시 시도해주세요.')
         // 짧은 안내 후 로그인 페이지로 이동

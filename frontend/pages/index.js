@@ -1,13 +1,10 @@
-import {useEffect} from 'react'
-import {useRouter} from 'next/router'
-
 export default function Home() {
-  const router = useRouter()
-
-  useEffect(() => {
-    // 루트 접근 시 로그인 페이지로 리다이렉트
-    router.replace('/login')
-  }, [router])
-
-  return null
+  return (
+    <main style={{ fontFamily: 'Arial, sans-serif', padding: 24 }}>
+      <h1>Marry Check</h1>
+      <p>로그인에 성공했습니다. 환영합니다!</p>
+    </main>
+  )
 }
+// 이 페이지는 로그인이 필요하다는 깃발 꽂기
+Home.requiresAuth = true;
